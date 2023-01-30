@@ -20,11 +20,19 @@ func (hr *MessageHandlerRegister) AddHandler(handler MessageHandler) error {
 }
 
 func (hr *MessageHandlerRegister) HandleMessage(myAppsConnection *MyAppsConnection, key string, message []byte) error {
+	handled := false
+	
 	for _, handler := range hr.Handler {
 		if handler.GetMt() == key {
-			return handler.HandleMessage(myAppsConnection, message)
+			handler.HandleMessage(myAppsConnection, message)
+			handled = true
 		}
 	}
-	err := fmt.Errorf("no handler found for '%v'", key)
-	return err
+
+	if handled {
+		err := fmt.Errorf("no handler found for '%v'", key)
+		return err
+	} else {
+		return nil
+	}
 }
