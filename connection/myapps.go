@@ -26,7 +26,8 @@ var ReconnectTimeout = time.Second * 2
 
 // Message struct
 type Message struct {
-	Mt string `json:"mt"`
+	Mt  string `json:"mt"`
+	Src string `json:"src"`
 }
 
 // the Values for one Account
@@ -37,7 +38,7 @@ type Config struct {
 	Password           string                 `yaml:"password"`           // Password to the Username
 	SessionFilePath    string                 `yaml:"sessionfilepath"`    // Filename to a local JSON file to store the session. Will be created if it not exists
 	UserAgent          string                 `yaml:"useragent"`          // the User Agnent shown in the list of current sessions in the user profile
-	Handler            MessageHandlerRegister // list of message handler on the ssesion
+	Handler            MessageHandlerRegister // list of message handler on the session
 	RedirectHost       string                 // is set, when the user is located not in the master and should open a connection to the secondary pbx
 	Debug              bool                   `yaml:"debug"` // set to true to print log messages of the connection
 }
@@ -85,22 +86,16 @@ func (config *Config) StartSession(wg *sync.WaitGroup) {
 			continue
 		}
 
-		myappsSession := MyAppsConnection{
-			Context: ctx,
-			Conn:    conn,
-
-			Config: config,
-			Nonce:  GetRandomHexString(16),
-		}
+		myappsSession := NewMyAppsConnection(ctx, conn, config)
 
 		// Add onDisconnect function
 		conn.SetCloseHandler(func(code int, text string) error {
-			onDisconnect(&myappsSession)
+			onDisconnect(myappsSession)
 			conn.Close()
 			return nil
 		})
 
-		err_handler := onConnect(&myappsSession)
+		err_handler := onConnect(myappsSession)
 		if err_handler != nil {
 			config.Printf("Error in onConnect: %v", err_handler)
 		}
@@ -192,17 +187,37 @@ type MyAppsConnection struct {
 
 	Nonce string
 
-	LoggedIn bool           // indicates if a user is logged in
-	User     *MyAppUserInfo // the info object of the logged in user
+	LoggedIn                bool                     // indicates if a user is logged in
+	User                    *MyAppUserInfo           // the info object of the logged in user
+	Apps                    map[string]*App          // keeps a list of apps in the account ["devices", "contacts", ...].
+	CallbackHandlerRegister *CallbackHandlerRegister // hold a list of callback handler that are registered for a message with src attribute
+
+}
+
+func NewMyAppsConnection(ctx context.Context, conn *websocket.Conn, config *Config) *MyAppsConnection {
+	m := &MyAppsConnection{}
+	m.Context = ctx
+	m.Conn = conn
+	m.Config = config
+	m.Nonce = GetRandomHexString(16)
+	m.Apps = make(map[string]*App)
+	m.CallbackHandlerRegister = NewCallbackHandlerRegister()
+	return m
 }
 
 func (myappsConnection *MyAppsConnection) send(message []byte) error {
+	myappsConnection.Config.Println("sending to pbx", string(message))
 	err := myappsConnection.Conn.WriteMessage(websocket.TextMessage, message)
 	if err != nil {
 		myappsConnection.Config.Println("Error sending message:", err)
 		return err
 	}
 	return nil
+}
+
+func (myappsConnection *MyAppsConnection) SendWithResult(message []byte, src string, num int, handler CallbackHandler) error {
+	myappsConnection.CallbackHandlerRegister.Add(src, num, handler)
+	return myappsConnection.send(message)
 }
 
 func (myappsConnection *MyAppsConnection) sendLogin() error {
@@ -224,15 +239,18 @@ func (myappsConnection *MyAppsConnection) sendLogin() error {
 }
 
 func (myappsConnection *MyAppsConnection) received(message []byte) error {
+	myappsConnection.Config.Printf("received from pbx: %s", string(message))
+
 	// Unmarshal message
-	var msg map[string]interface{}
+	var msg Message
 	if err := json.Unmarshal(message, &msg); err != nil {
 		myappsConnection.Config.Println("server: error unmarshalling message:", err)
 	}
 
-	switch msg["mt"] {
+	switch msg.Mt {
 	default:
-		myappsConnection.Config.Handler.HandleMessage(myappsConnection, fmt.Sprintf("%s", msg["mt"]), message)
+		myappsConnection.CallbackHandlerRegister.HandleMessage(myappsConnection, msg.Src, message)
+		myappsConnection.Config.Handler.HandleMessage(myappsConnection, msg.Mt, message)
 	case "CheckBuildResult":
 		var checkbuildresult CheckBuildResult
 		err := json.Unmarshal(message, &checkbuildresult)

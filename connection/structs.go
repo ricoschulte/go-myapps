@@ -128,3 +128,18 @@ type Redirect struct {
 	} `json:"info"`
 	Digest string `json:"digest"`
 }
+
+type App struct {
+	Name  string `json:"name"`
+	Title string `json:"title"`
+	Text  string `json:"text"`
+	Url   string `json:"url"`
+	Info  struct {
+		Hidden bool `json:"hidden"`
+	} `json:"info"`
+}
+
+type UpdateAppsInfo struct {
+	Mt  string `json:"mt"`
+	App App    `json:"app"`
+}

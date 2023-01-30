@@ -1,11 +1,14 @@
 package handler
 
 import (
-	"github.com/ricoschulte/go-myapps/connection"
+	"encoding/json"
 
-	"github.com/goccy/go-json"
+	"github.com/ricoschulte/go-myapps/connection"
 )
 
+/*
+* adds the avaiable apps of a account to the connection
+ */
 type HandleUpdateAppsInfo struct {
 }
 
@@ -14,22 +17,13 @@ func (m *HandleUpdateAppsInfo) GetMt() string {
 }
 
 func (m *HandleUpdateAppsInfo) HandleMessage(myAppsConnection *connection.MyAppsConnection, message []byte) error {
-	var msgin struct {
-		Mt  string `json:"mt"`
-		App struct {
-			Name  string `json:"name"`
-			Title string `json:"title"`
-			Text  string `json:"text"`
-			Url   string `json:"url"`
-			Info  struct {
-				Hidden bool `json:"hidden"`
-			} `json:"info"`
-		} `json:"app"`
-	}
+	var msgin = connection.UpdateAppsInfo{}
 	err := json.Unmarshal(message, &msgin)
 	if err != nil {
 		return err
 	}
+
+	myAppsConnection.Apps[msgin.App.Name] = &msgin.App
 	return nil
 }
 
