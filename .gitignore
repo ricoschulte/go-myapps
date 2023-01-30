@@ -19,3 +19,6 @@ myapps_session*
 
 # vscode
 .vscode/
+
+# main.go
+main.go
