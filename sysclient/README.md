@@ -9,11 +9,14 @@ An implementation of the Sysclient protocol described at [Sysclient protocol](ht
 
 ## Example usage of the libary
 
+This example code deploys a sysclient that connects to the Devices app's websocket.
+It then serves HTTP endpoints that are accessible through the interface in the Devices app.
+It issues the requests with the received configurations on the console.
+
 ``` go
 package main
 
 import (
-	"embed"
 	"fmt"
 	"net/http"
 	"time"
@@ -22,12 +25,6 @@ import (
 )
 
 
-// this is a local folder in your project 
-// the files and dirs in this directory are build into the go binary and
-// can be requested over a tunnel connection within the device app
-
-//go:embed devices/*
-var StaticDevicesFolderFS embed.FS
 
 func main() {
 	// define the properties of the device that connects to the devices app as sysclient
@@ -41,8 +38,8 @@ func main() {
 		Fw:      "ip222.bin",
 		Bc:      "boot222.bin",
 		Mini:    false,
-        PbxActive: false,
-        Other: false,
+		PbxActive: false,
+		Other: false,
 		Platform: sysclient.Platform{
 			Type: "PHONE",
 		},
@@ -62,7 +59,7 @@ func main() {
 		
 		// the Devices App URL to connect to
         // ws[s]://<ip/host>[:<port>]/<domain></instance>/sysclients
-	    "wss://apps.company.com/company.com/devices/sysclients"
+		"wss://apps.company.com/company.com/devices/sysclients",
 
 		// a timeout duration for the websocket
 		time.Duration(2*time.Second),
@@ -90,7 +87,7 @@ func main() {
 }
 
 // create a ServeMux for handling Tunnel Http Requests
-func getServerMux() *http.ServeMux {
+func getServeMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Serve a file for the /admin.xml path
