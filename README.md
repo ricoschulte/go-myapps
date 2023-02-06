@@ -1,6 +1,8 @@
 # go-myapps
 
-A golang client to connect to one or more myApps accounts of users at a innovaphone pbx via websocket.
+- A golang client to connect to one or more myApps accounts of users at a innovaphone pbx via websocket.
+
+- A implementation of the sysclient protocol. See README.md in the ./sysclient/ folder.
 
 ## Introduction
 

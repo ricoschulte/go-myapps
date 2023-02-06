@@ -17,6 +17,13 @@
 # local sessions
 myapps_session*
 
+
+#### sysclient
+# local sysclient sessions
+sysclient_*.txt
+# static folder for sysclient
+devices/ 
+
 # vscode
 .vscode/
 
