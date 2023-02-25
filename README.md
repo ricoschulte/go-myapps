@@ -32,6 +32,7 @@ accountConfig := &connection.Config{
 	Password:        "examplePassword",
 	UserAgent:       "myApps (Go)",
 	SessionFilePath: "myapps_session.json",
+	SecretKey:       []byte("Secretkey to encrypt myapps sessionkeys on local disk"),
 	Debug:           true,
     InsecureSkipVerify: false,
 }
@@ -44,6 +45,7 @@ In this example, the following information is provided:
 - **Password**: The password for the myApps account you want to use.
 - **UserAgent**: The user agent that will be sent to the myApps server. This is used to identify sessions of the client at the Account Security list within the myApps Clients.
 - **SessionFilePath**: The file path where the session keys state will be stored. This allows you to resume a session after a disconnect. Please note that they are (for now) unencrypted stored.
+- **SecretKey**: A Password to encrypt the SessionFilePath file on the local disk
 - **Debug**: A boolean value indicating whether or not to enable debug logging. Default is false, meaning no debug messages.
 - **InsecureSkipVerify**: A boolean value indicating whether or not to verify the SSL/TLS certificate. Default is false, so connections are aborted, if the Host does not provide a valid certificate.
 
@@ -107,6 +109,7 @@ func main() {
 		InsecureSkipVerify: true,
 		UserAgent:          "myApps Go client",
 		SessionFilePath:    "myapps_session.json",
+		SecretKey:          []byte("Secretkey to encrypt myapps sessionkeys on local disk"),
 		Debug:              true,
 	}
 
@@ -148,6 +151,7 @@ func main() {
 		InsecureSkipVerify: false,
 		UserAgent:          "myApps Go client",
 		SessionFilePath:    "myapps_session.json",
+		SecretKey:          []byte("Secretkey to encrypt myapps sessionkeys on local disk"),
 		Debug:              true,
 	})
 
@@ -158,6 +162,7 @@ func main() {
 		Password:        "examplePassword2",
 		UserAgent:       "myBot (Go)",
 		SessionFilePath: "myapps_session_2.json",
+		SecretKey:       []byte("a different Secretkey"),
 		Debug:           true,
 	})
 
@@ -168,6 +173,7 @@ func main() {
 		Password:        "examplePassword3",
 		UserAgent:       "myApps (Go)",
 		SessionFilePath: "myapps_session_3.json",
+		SecretKey:       []byte("another one"),
 		Debug:           true,
 	})
 

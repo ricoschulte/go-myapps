@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -17,6 +16,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/ricoschulte/go-myapps/encryption"
 )
 
 const session_length_usr = 32
@@ -37,6 +37,7 @@ type Config struct {
 	Username           string                 `yaml:"username"`           // Username of the pbx
 	Password           string                 `yaml:"password"`           // Password to the Username
 	SessionFilePath    string                 `yaml:"sessionfilepath"`    // Filename to a local JSON file to store the session. Will be created if it not exists
+	SecretKey          []byte                 `yaml:"-"`                  // the key to encrypt local files
 	UserAgent          string                 `yaml:"useragent"`          // the User Agnent shown in the list of current sessions in the user profile
 	Handler            MessageHandlerRegister // list of message handler on the session
 	RedirectHost       string                 // is set, when the user is located not in the master and should open a connection to the secondary pbx
@@ -113,7 +114,7 @@ func (myappconfig *Config) GetSessionKeys() (string, string, error) {
 	}
 
 	// read file
-	file, err := ioutil.ReadFile(myappconfig.SessionFilePath)
+	file, err := encryption.DecryptFileSha256AES256(myappconfig.SecretKey, myappconfig.SessionFilePath)
 	if err != nil {
 		return "", "", err
 	}
@@ -161,7 +162,7 @@ func (myappconfig *Config) SaveSessionKeys(usr, pwd string) error {
 	}
 
 	// write file
-	if err := ioutil.WriteFile(myappconfig.SessionFilePath, file, 0600); err != nil {
+	if err := encryption.EncryptFileSha256AES256(myappconfig.SecretKey, file, myappconfig.SessionFilePath, 0600); err != nil {
 		return err
 	}
 

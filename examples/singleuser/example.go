@@ -17,6 +17,7 @@ func main() {
 		InsecureSkipVerify: true,
 		UserAgent:          "myApps Go client",
 		SessionFilePath:    "myapps_session.json",
+		SecretKey:          []byte("Secretkey to encrypt myapps sessionkeys on local disk"),
 		Debug:              true,
 	}
 
