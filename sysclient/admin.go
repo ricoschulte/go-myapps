@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/ricoschulte/go-myapps/encryption"
 )
 
 // Sysclient message header
@@ -64,7 +66,7 @@ func (am *AdminMessage) AsBytes() []byte {
 receives the sysclient password and stores it.
 no answer is required
 */
-func (am *AdminMessage) HandleAdminReceiveSysclientPassword(fileSysclientpassword string) error {
+func (am *AdminMessage) HandleAdminReceiveSysclientPassword(secretKey []byte, fileSysclientpassword string) error {
 	password, err_from_json := NewPassword(am.Data)
 	if err_from_json != nil {
 		return fmt.Errorf("parsing password from JSON failed: %v", err_from_json)
@@ -73,14 +75,15 @@ func (am *AdminMessage) HandleAdminReceiveSysclientPassword(fileSysclientpasswor
 		return fmt.Errorf("the password parsed from JSON has a invalid length of: %v", len(password.Password))
 	}
 
-	err := os.WriteFile(fileSysclientpassword, []byte(password.Password), 0644)
+	//err := os.WriteFile(fileSysclientpassword, []byte(password.Password), 0644)
+	err := encryption.EncryptFileSha256AES256(secretKey, []byte(password.Password), fileSysclientpassword, 0644)
 	if err != nil {
 		return fmt.Errorf("error while writing adminpassword to file '%s': %v", fileSysclientpassword, err)
 	}
 	return nil
 }
 
-func (am *AdminMessage) HandleAdminReceiveChallenge(deviceInfo *Identity, fileSysclientpassword string) (*AdminMessage, error) {
+func (am *AdminMessage) HandleAdminReceiveChallenge(secretKey []byte, deviceInfo *Identity, fileSysclientpassword string) (*AdminMessage, error) {
 	challenge, err_from_json := NewChallenge(am.Data)
 	if err_from_json != nil {
 		return nil, fmt.Errorf("parsing challenge from json failed: %v", err_from_json)
@@ -97,7 +100,8 @@ func (am *AdminMessage) HandleAdminReceiveChallenge(deviceInfo *Identity, fileSy
 	if fileinfo.IsDir() {
 		return nil, fmt.Errorf("path is a directory: %s", fileinfo.Name())
 	}
-	password, err := os.ReadFile(fileSysclientpassword)
+	//password, err := os.ReadFile(fileSysclientpassword)
+	password, err := encryption.DecryptFileSha256AES256(secretKey, fileSysclientpassword)
 	if err != nil {
 		fmt.Printf("error while reading password file: %v\n", err)
 		return nil, err
@@ -146,7 +150,7 @@ func (am *AdminMessage) GetLoginDigest(id, product, version, challenge, password
 /*
 receives a admin password and stores it, no answer is required
 */
-func (am *AdminMessage) handleAdminReceiveNewAdministrativePassword(fileSysclientpassword string, fileAdministrativePassword string) error {
+func (am *AdminMessage) handleAdminReceiveNewAdministrativePassword(secretKey []byte, fileSysclientpassword string, fileAdministrativePassword string) error {
 	if fileSysclientpassword == "" {
 		return errors.New("fileSysclientpassword cant be empty")
 	}
@@ -156,7 +160,9 @@ func (am *AdminMessage) handleAdminReceiveNewAdministrativePassword(fileSysclien
 		return fmt.Errorf("couldn't parse AdministrativePassword Message: %v", err)
 	}
 
-	passwordBytes, err := os.ReadFile(fileSysclientpassword)
+	//passwordBytes, err := os.ReadFile(fileSysclientpassword)
+	passwordBytes, err := encryption.DecryptFileSha256AES256(secretKey, fileSysclientpassword)
+
 	if err != nil {
 		return err
 	}
@@ -165,9 +171,10 @@ func (am *AdminMessage) handleAdminReceiveNewAdministrativePassword(fileSysclien
 		return err_decrypt
 	}
 
-	err = os.WriteFile(fileAdministrativePassword, decryped_adminpassword, 0644)
-	if err != nil {
-		return err
+	//err = os.WriteFile(fileAdministrativePassword, decryped_adminpassword, 0644)
+	err_write_adminpassword := encryption.EncryptFileSha256AES256(secretKey, decryped_adminpassword, fileAdministrativePassword, 0644)
+	if err_write_adminpassword != nil {
+		return err_write_adminpassword
 	}
 	return nil //resp, nil
 }

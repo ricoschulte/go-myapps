@@ -14,7 +14,6 @@ import (
 	"github.com/ricoschulte/go-myapps/connection"
 )
 
-
 type Sysclient struct {
 	Identity           Identity
 	Url                string
@@ -27,9 +26,10 @@ type Sysclient struct {
 
 	FileSysclientPassword      string // filename to store
 	FileAdministrativePassword string // filename to store
+	SecretKey                  []byte // key to encrypt the local files as []bytes
 }
 
-func NewSysclient(identity Identity, url string, timeout time.Duration, insecureSkipVerify bool, mux *http.ServeMux, fileSysclientPassword string, fileAdministrativePassword string) (*Sysclient, error) {
+func NewSysclient(identity Identity, url string, timeout time.Duration, insecureSkipVerify bool, mux *http.ServeMux, fileSysclientPassword string, fileAdministrativePassword string, secretkey string) (*Sysclient, error) {
 	if fileSysclientPassword == "" {
 		return nil, errors.New("fileSysclientPassword cant be empty")
 	}
@@ -47,6 +47,7 @@ func NewSysclient(identity Identity, url string, timeout time.Duration, insecure
 
 		FileSysclientPassword:      fileSysclientPassword,
 		FileAdministrativePassword: fileAdministrativePassword,
+		SecretKey:                  []byte(secretkey),
 	}
 
 	return sysclient, nil
@@ -242,16 +243,16 @@ func (sc *Sysclient) HandleAdminMessage(messageIn *AdminMessage) (*AdminMessage,
 		return nil, fmt.Errorf("unknown Admin Message of Type %v", messageIn.Type)
 
 	case bytes.Equal(messageIn.Command, AdminReceiveSysclientPassword):
-		err := messageIn.HandleAdminReceiveSysclientPassword(sc.FileSysclientPassword)
+		err := messageIn.HandleAdminReceiveSysclientPassword(sc.SecretKey, sc.FileSysclientPassword)
 		if err != nil {
 			return nil, err
 		}
 		return nil, nil
 	case bytes.Equal(messageIn.Command, AdminReceiveChallenge):
-		return messageIn.HandleAdminReceiveChallenge(&sc.Identity, sc.FileSysclientPassword)
+		return messageIn.HandleAdminReceiveChallenge(sc.SecretKey, &sc.Identity, sc.FileSysclientPassword)
 
 	case bytes.Equal(messageIn.Command, AdminReceiveNewAdminPassword):
-		err := messageIn.handleAdminReceiveNewAdministrativePassword(sc.FileSysclientPassword, sc.FileAdministrativePassword)
+		err := messageIn.handleAdminReceiveNewAdministrativePassword(sc.SecretKey, sc.FileSysclientPassword, sc.FileAdministrativePassword)
 		if err != nil {
 			return nil, err
 		}

@@ -1,35 +1,35 @@
 package sysclient_test
 
 import (
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/ricoschulte/go-myapps/encryption"
 	"github.com/ricoschulte/go-myapps/sysclient"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestResponseTypesToAdminMessages(t *testing.T) {
 	sysclientpassword := "2jjH!u3ucXscEzHq8X!l83BX3!U8TPwA"
-
+	secretkey := "to encrypt the local files"
 	// create a dummy password file
-	sysclientpassword_file, err := ioutil.TempFile("", "sysclientpassword*.txt")
+	sysclientpassword_file, err := os.CreateTemp("", "sysclientpassword*.txt")
 	if err != nil {
 		panic(err)
 	}
 	defer os.Remove(sysclientpassword_file.Name()) // remove the file after the test is done
 
 	// create a dummy admin password file
-	administrativepassword_file, err := ioutil.TempFile("", "sysclient_administrativepassword*.txt")
+	administrativepassword_file, err := os.CreateTemp("", "sysclient_administrativepassword*.txt")
 	if err != nil {
 		panic(err)
 	}
 	defer os.Remove(administrativepassword_file.Name()) // remove the file after the test is done
 
 	// reset the content after the test
-	_, err = sysclientpassword_file.Write([]byte(sysclientpassword))
+	err = encryption.EncryptFileSha256AES256([]byte(secretkey), []byte(sysclientpassword), sysclientpassword_file.Name(), 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -135,6 +135,7 @@ func TestResponseTypesToAdminMessages(t *testing.T) {
 				http.NewServeMux(),
 				sysclientpassword_file.Name(),
 				administrativepassword_file.Name(),
+				secretkey,
 			)
 			if err_creating_client != nil {
 				t.Fatalf("Error creating client: %v", err_creating_client)
