@@ -238,7 +238,7 @@ func (w *HttpResponseWriter) WriteHeader(status int) {
 	w.status = status
 }
 func (w *HttpResponseWriter) GetBytes() []byte {
-	bu := fmt.Sprintf("HTTP/1.1 %v\r\n", http.StatusText(w.status))
+	bu := fmt.Sprintf("HTTP/1.1 %d %v\r\n", w.status, http.StatusText(w.status))
 	bu += fmt.Sprintf("%s: %s\r\n", "Content-Length", strconv.Itoa(len(w.response)))
 	bu += fmt.Sprintf("%s: %s\r\n", "Content-Type", http.DetectContentType([]byte(w.response)))
 	bu += "\r\n"
