@@ -27,7 +27,7 @@ type Identity struct {
 	Other     bool     `json:"other"`
 	Platform  Platform `json:"platform"`
 	Digest    string   `json:"digest,omitempty"`
-	EthIfs    []EthIf  `json:"ethIfs,omitempty"`
+	EthIfs    []EthIf  `json:"ethIfs,omitempty"` // up to 3 eth interfaces are allowed. 
 }
 
 func NewIdentity(json_bytes []byte) (*Identity, error) {
