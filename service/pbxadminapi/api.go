@@ -31,12 +31,18 @@ func (api *PbxAdminApi) OnDisconnect(connection *service.AppServicePbxConnection
 
 func (api *PbxAdminApi) HandleMessage(connection *service.AppServicePbxConnection, msg *service.BaseMessage, message []byte) {
 	switch msg.Mt {
-	case "GetAppLicsResult":
-		msg := GetAppLicsResult{}
+	case "GetPbxLicensesResult":
+		msg := GetPbxLicensesResult{}
 		if err := json.Unmarshal(message, &msg); err != nil {
-			log.Errorf("PbxApi: error unmarshalling message: %v", err)
+			log.Errorf("PbxAdminApi: error unmarshalling message: %v", err)
 		}
-		api.sendEvent(PbxAdminApiEvent{Type: PbxAdminApiGetAppLicsResult, GetAppLicsResult: &msg, Connection: connection})
+		api.sendEvent(PbxAdminApiEvent{Type: PbxAdminApiGetPbxLicensesResult, GetPbxLicensesResult: &msg, Connection: connection})
+	case "GetAppLicsResult":
+		msg := GetAppLicensesResult{}
+		if err := json.Unmarshal(message, &msg); err != nil {
+			log.Errorf("PbxAdminApi: error unmarshalling message: %v", err)
+		}
+		api.sendEvent(PbxAdminApiEvent{Type: PbxAdminApiGetAppLicsResult, GetAppLicensesResult: &msg, Connection: connection})
 	default:
 		log.Warn("unknown message received: %s", msg.Mt)
 	}

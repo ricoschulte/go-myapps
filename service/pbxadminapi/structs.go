@@ -7,6 +7,26 @@ import (
 )
 
 // Request the available App Licenses
+type GetPbxLicenses struct {
+	service.BaseMessage
+}
+
+func NewGetPbxLicenses(src string) *GetPbxLicenses {
+	return &GetPbxLicenses{
+		BaseMessage: service.BaseMessage{
+			Api: "PbxAdminApi",
+			Mt:  "GetPbxLicenses",
+			Src: src,
+		},
+	}
+}
+
+type GetPbxLicensesResult struct {
+	service.BaseMessage
+	Licenses []AppLic `json:"lic"`
+}
+
+// Request the available App Licenses
 type GetAppLics struct {
 	service.BaseMessage
 }
@@ -21,7 +41,7 @@ func NewGetAppLics(src string) *GetAppLics {
 	}
 }
 
-type GetAppLicsResult struct {
+type GetAppLicensesResult struct {
 	service.BaseMessage
 	Licenses []AppLic `json:"lic"`
 }
@@ -73,11 +93,13 @@ func (l *AppLic) GetSlaves(errValue float64) float64 {
 }
 
 type PbxAdminApiEvent struct {
-	Type             int
-	Connection       *service.AppServicePbxConnection
-	GetAppLicsResult *GetAppLicsResult
+	Type                 int
+	Connection           *service.AppServicePbxConnection
+	GetAppLicensesResult *GetAppLicensesResult
+	GetPbxLicensesResult *GetPbxLicensesResult
 }
 
 const PbxAdminApiEventDisconnect = -20
 const PbxAdminApiEventConnect = -10
 const PbxAdminApiGetAppLicsResult = 10
+const PbxAdminApiGetPbxLicensesResult = 20
