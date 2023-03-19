@@ -11,9 +11,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// accept always all origins of websockets
+func checkOrigin(r *http.Request) bool {
+	return true
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin:     checkOrigin,
 }
 
 var challenges = make(map[*websocket.Conn]string)
