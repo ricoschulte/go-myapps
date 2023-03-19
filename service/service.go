@@ -25,9 +25,9 @@ type AppService struct {
 	Name          string
 	Password      string
 
-	Fs         http.FileSystem
-	ApiHandler []PbxApiInterface
-
+	Fs                http.FileSystem
+	ApiHandler        []PbxApiInterface
+	HttpRootMux       *http.ServeMux
 	Connections       []*AppServicePbxConnection // list of current connected websocket connections
 	ConnectionsMutext sync.Mutex
 }
@@ -43,6 +43,7 @@ func NewAppService(ip string, port int, portTls int, tlsCert string, tlsCertKey 
 		ListenPortTls: portTls,
 		TlsCertString: tlsCert,    // X509 Certificate
 		TlsKeyString:  tlsCertKey, // X509 Private Key
+		HttpRootMux:   http.NewServeMux(),
 		Domain:        domain,
 		Instance:      instance,
 		Name:          name,
@@ -55,8 +56,6 @@ func (s *AppService) Start() error {
 	rootpath := fmt.Sprintf("/%s/%s/%s/", s.Domain, s.Name, s.Instance)
 	log.Infof("register service with path: %s", rootpath)
 
-	mux := http.NewServeMux()
-
 	router := chi.NewRouter()
 	logs := log.New()
 
@@ -67,7 +66,7 @@ func (s *AppService) Start() error {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.SetHeader("Server", s.Name))
 
-	mux.HandleFunc(fmt.Sprintf("/%s/%s/%s", s.Domain, s.Name, s.Instance), func(w http.ResponseWriter, r *http.Request) {
+	s.HttpRootMux.HandleFunc(fmt.Sprintf("/%s/%s/%s", s.Domain, s.Name, s.Instance), func(w http.ResponseWriter, r *http.Request) {
 		handleConnectionForHttpOrWebsocket(s, w, r)
 	})
 
@@ -81,10 +80,10 @@ func (s *AppService) Start() error {
 	)
 
 	router.Mount(rootpath, router_api)
-	mux.Handle(rootpath, router)
+	s.HttpRootMux.Handle(rootpath, router)
 
-	mux.HandleFunc("/manager/fixcert.htm", s.HandleManagerFixCertResponse)
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	s.HttpRootMux.HandleFunc("/manager/fixcert.htm", s.HandleManagerFixCertResponse)
+	s.HttpRootMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.
 			WithField("path", r.URL.Path).
 			Info("404 not found")
@@ -95,7 +94,7 @@ func (s *AppService) Start() error {
 	go func() {
 		if s.ListenPort > 0 {
 			log.Infof("starting Http %s:%v", s.ListenIp, s.ListenPort)
-			if err := http.ListenAndServe(fmt.Sprintf("%s:%v", s.ListenIp, s.ListenPort), mux); err != nil {
+			if err := http.ListenAndServe(fmt.Sprintf("%s:%v", s.ListenIp, s.ListenPort), s.HttpRootMux); err != nil {
 				log.Errorf("Error starting Http server: '%s:%d' %v ", s.ListenIp, s.ListenPort, err)
 			}
 		}
@@ -104,7 +103,7 @@ func (s *AppService) Start() error {
 	go func() {
 		if s.ListenPortTls > 0 {
 			log.Infof("starting Http/Tls %s:%v", s.ListenIp, s.ListenPortTls)
-			err := s.StartTls(mux)
+			err := s.StartTls(s.HttpRootMux)
 			if err != nil {
 				log.Errorf("Error starting Http/Tls server: '%s:%d' %v ", s.ListenIp, s.ListenPortTls, err)
 			}
