@@ -17,9 +17,7 @@ func AppIndex(appservice *AppService, w http.ResponseWriter, req *http.Request) 
 // handles both websocket and http GET/POST requests on the same path
 func handleConnectionForHttpOrWebsocket(appservice *AppService, w http.ResponseWriter, r *http.Request) {
 	log.Warnf("serve handleConnectionForHttpOrWebsocket %s", r.URL.Path)
-	if r.URL.Path != "/test.company.com/testservice/mytestservice" {
-		return
-	}
+	
 	if r.Method != http.MethodGet && r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
