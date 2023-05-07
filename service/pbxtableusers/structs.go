@@ -253,20 +253,41 @@ var (
 	PseudoTypeUser           = "user" // by default, the user object have not pseudo type aka a empty value ""
 )
 
-/*
-Pseudo Types
-
-List of known pseudo types of pbx objects
-*/
+// List of known Pseudo Types of pbx objects
+// Use this list with care. If i use this list with >20 items with 'ReplicateStart' the pbx bootloops with 'Unexpected Restart WATCHDOG (2) of 137818'
 var PseudoTypes = []string{
-	"app",
-	"gw",
-	"loc",
-	"waiting",
-	"executive",
-	"bool",
-	"trunk",
-	"", // users
+	PseudoTypeAp,
+	PseudoTypeApp,
+	PseudoTypeBcConference,
+	PseudoTypeBroadcast,
+	PseudoTypeConference,
+	PseudoTypeConfig,
+	PseudoTypeDect,
+	PseudoTypeDirsearch,
+	PseudoTypeDtmfCtrl,
+	PseudoTypeUc,
+	PseudoTypeFax,
+	PseudoTypeIcp,
+	PseudoTypeLdap,
+
+	PseudoTypeMCastAnnounce,
+	PseudoTypeMessageWaiting,
+	PseudoTypeMessages,
+	PseudoTypeMobility,
+	PseudoTypeNode,
+	PseudoTypeNumberMap,
+	PseudoTypePush,
+	PseudoTypeQuickdial,
+	PseudoTypeSessionBorder,
+	PseudoTypeSettings,
+	PseudoTypeVoicemail,
+	PseudoTypeGw,
+	PseudoTypePbx,
+	PseudoTypeWaitingQueue,
+	PseudoTypeExecutive,
+	PseudoTypeBoolean,
+	PseudoTypeTrunk,
+	"", // users / PseudoTypeUser
 }
 
 var AllFields = []string{}
