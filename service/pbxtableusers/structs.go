@@ -1,6 +1,12 @@
 package pbxtableusers
 
-import "github.com/ricoschulte/go-myapps/service"
+import (
+	"encoding/xml"
+	"errors"
+	"fmt"
+
+	"github.com/ricoschulte/go-myapps/service"
+)
 
 type Column struct {
 	Udate bool `json:"update"`
@@ -82,7 +88,7 @@ type ReplicatedObject struct {
 	E164      string `json:"e164"`       // ReplicationString	e164	Phone number
 	Cfpr      bool   `json:"cfpr"`       // ReplicationTristate	cfpr	Call forward based on Presence
 	Tcfpr     string `json:"t-cfpr"`     // ReplicationTristate	t-cfpr	Call forward based on Presence inherited from the config template
-	Pseudo    string `json:"pseudo"`     // ReplicationString	pseudo	Pseudo information of the object
+	Pseudo    string `json:"pseudo"`     // ReplicationString	pseudo	XML Pseudo information of the object
 	H323email bool   `json:"h323-email"` // ReplicationBool	h323-email	If true, the email is the username
 	Apps      string `json:"apps"`       // ReplicationString	apps	List of the apps that the user has rights to access
 	Fax       bool   `json:"fax"`        // ReplicationBool	fax	If true, the user has a fax license
@@ -167,6 +173,85 @@ type ReplicatedObject struct {
 		Boolnot  bool   `json:"bool-not"` // ReplicationBool	bool-not	Not flag (boolean object)
 	} `json:"wakeups"` // wakeups Table with the users wakeups
 }
+
+// returns the Pseudo Type of the Object based on the Xml based Pseudo Data
+// for user objects that do not have a explicit pseudo type a by default a pseudo type "user" is returned
+// when the pseudo type is empty it is assumed that the object is a "user object"
+// if the xml based infos could not be parsed, a error and a empty string is returned
+func (obj *ReplicatedObject) GetPseudoType() (string, error) {
+	if obj.Pseudo == "" {
+		return PseudoTypeUser, nil
+	}
+	var pseudo PseudoTypeXml
+	err := xml.Unmarshal([]byte(obj.Pseudo), &pseudo)
+	if err != nil {
+		return "", fmt.Errorf("Failed to parse PseudoType XML: %s", err)
+	}
+
+	// make sure that every type we do not know results in a error
+	for _, s := range PseudoTypes {
+		if s == pseudo.Type {
+			return s, nil
+		}
+	}
+	return "", errors.New("could not get a valid pseudo type from the object. none of the known types are found")
+
+}
+
+// root element of XML pased Pseudo Type
+type PseudoTypeXml struct {
+	XMLName xml.Name         `xml:"pseudo"`
+	Type    string           `xml:"type,attr"`
+	App     PseudoTypeXmlApp `xml:"app"`
+}
+
+type PseudoTypeXmlApp struct {
+	URL           string `xml:"url,attr"`
+	WebSocket     bool   `xml:"websocket,attr"`
+	PBX           bool   `xml:"pbx,attr"`
+	PBXSignal     bool   `xml:"pbxsignal,attr"`
+	EPSignal      bool   `xml:"epsignal,attr"`
+	Messages      bool   `xml:"messages,attr"`
+	TableUsers    bool   `xml:"tableusers,attr"`
+	Admin         bool   `xml:"admin,attr"`
+	Services      bool   `xml:"services,attr"`
+	RCC           bool   `xml:"rcc,attr"`
+	Impersonation bool   `xml:"impersonation,attr"`
+}
+
+var (
+	PseudoTypeAp             = "ap"
+	PseudoTypeApp            = "app"
+	PseudoTypeBcConference   = "bc_conf"
+	PseudoTypeBroadcast      = "broadcast"
+	PseudoTypeConference     = "conference"
+	PseudoTypeConfig         = "config"
+	PseudoTypeDect           = "dect"
+	PseudoTypeDirsearch      = "dirsearch"
+	PseudoTypeDtmfCtrl       = "dtmf-ctrl"
+	PseudoTypeUc             = "uc"
+	PseudoTypeFax            = "fax"
+	PseudoTypeIcp            = "icp"
+	PseudoTypeLdap           = "ldap"
+	PseudoTypeMCastAnnounce  = "multicast"
+	PseudoTypeMessageWaiting = "mwi"
+	PseudoTypeMessages       = "messages"
+	PseudoTypeMobility       = "mobility"
+	PseudoTypeNode           = "node"
+	PseudoTypeNumberMap      = "map"
+	PseudoTypePush           = "push"
+	PseudoTypeQuickdial      = "qdial"
+	PseudoTypeSessionBorder  = "sbc"
+	PseudoTypeSettings       = "settings"
+	PseudoTypeVoicemail      = "vm"
+	PseudoTypeGw             = "gw"
+	PseudoTypePbx            = "loc"
+	PseudoTypeWaitingQueue   = "waiting"
+	PseudoTypeExecutive      = "executive"
+	PseudoTypeBoolean        = "bool"
+	PseudoTypeTrunk          = "trunk"
+	PseudoTypeUser           = "user" // by default, the user object have not pseudo type aka a empty value ""
+)
 
 /*
 Pseudo Types
