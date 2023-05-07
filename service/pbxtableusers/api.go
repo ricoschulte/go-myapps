@@ -11,9 +11,10 @@ import (
 )
 
 type PbxTableUsers struct {
-	ReplicatedObjects map[string]ReplicatedObject // synced objects
-	mu                sync.Mutex
-	receivers         []chan PbxTableUsersEvent
+	ReplicatedObjects      map[string]ReplicatedObject // synced objects
+	ReplicatedObjectsMutex sync.Mutex
+	mu                     sync.Mutex
+	receivers              []chan PbxTableUsersEvent
 }
 
 func NewPbxTableUsers() *PbxTableUsers {
@@ -35,6 +36,8 @@ func (api *PbxTableUsers) OnDisconnect(connection *service.AppServicePbxConnecti
 }
 
 func (api *PbxTableUsers) HandleMessage(connection *service.AppServicePbxConnection, msg *service.BaseMessage, message []byte) {
+	api.ReplicatedObjectsMutex.Lock()
+	defer api.ReplicatedObjectsMutex.Unlock()
 	switch msg.Mt {
 	case "ReplicateStartResult":
 		msg := ReplicateStartResult{}
@@ -115,4 +118,17 @@ func (api *PbxTableUsers) sendEvent(event PbxTableUsersEvent) {
 	for _, ch := range api.receivers {
 		ch <- event
 	}
+}
+
+// returns the current replicated objects in a go routine save way
+func (api *PbxTableUsers) GetReplicatedObjects() map[string]ReplicatedObject {
+	// lock the map to prevent concurrent writes/reads
+	api.ReplicatedObjectsMutex.Lock()
+	defer api.ReplicatedObjectsMutex.Unlock()
+	listcopy := make(map[string]ReplicatedObject)
+	for key, value := range api.ReplicatedObjects {
+		listcopy[key] = value
+	}
+	return listcopy
+
 }
